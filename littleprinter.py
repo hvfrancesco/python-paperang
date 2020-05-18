@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-import time
+import config
 import hardware
 import image_data
-import tempfile
+import logging
 import os
+import sys
+import tempfile
+import time
+import traceback
 from watchgod import watch
-import config
 from pathlib import Path
+
 
 class Paperang_Printer:
     def __init__(self):
@@ -20,12 +24,29 @@ class Paperang_Printer:
             self.printer_hardware.sendImageToBt(image_data.sirius(path))
 
 if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.DEBUG)
     mmj=Paperang_Printer()
     # `sirius-client` will write to this folder
     tmpdir = os.path.join(tempfile.gettempdir(), 'sirius-client')
     Path(tmpdir).mkdir(parents=True, exist_ok=True)
+    logging.info("tmpdir = " + tmpdir)
     
     for changes in watch(tmpdir):
-        file = changes.pop()[1] 
-        print("Printing " + file)
-        mmj.print_sirius_image(file)
+        while len(changes) > 0:
+            change = changes.pop()
+            file = change[1]
+            print("Printing " + file)
+            try:
+                if mmj is None:
+                    mmj = Paperang_Printer()
+                mmj.print_sirius_image(file)
+            except Exception as ex:
+                print("There was a problem while printing: ", sys.exc_info()[1])
+                logging.debug(traceback.format_exc())
+                timeout = 15
+                print("Trying again in ", timeout, " seconds...")
+                time.sleep(timeout)
+                print("attempting to reconnect to printer...")
+                mmj = None
+                changes.add(change)
+

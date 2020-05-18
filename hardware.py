@@ -183,7 +183,7 @@ class Paperang:
         self.sendPaperTypeToBt()
         # msg = struct.pack("<%dc" % len(binary_img), *map(bytes, binary_img))
         msg = b"".join(map(lambda x: struct.pack("<c",x.to_bytes(1,byteorder="little")),binary_img))
-        print(msg)
+        logging.debug(msg)
         self.sendToBt(msg, BtCommandByte.PRT_PRINT_DATA, need_reply=False)
         self.sendFeedLineToBt(self.padding_line)
 
